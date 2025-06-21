@@ -69,8 +69,7 @@ export default defineConfig({
           {
             src: 'screenshots/mobile-375x667.png',
             sizes: '375x667',
-            type: 'image/png'
-            // No form_factor = mobile by default
+            type: 'image/png'  // <-- added missing comma here
           }
         ]
       },
