@@ -1,4 +1,3 @@
-// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import {
   Typography,
@@ -10,6 +9,7 @@ import {
 } from "@mui/material";
 import { getProfile, getUserFreeNotesRemaining } from "../firebase/firestoreHelper";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase/firebaseConfig";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
@@ -20,15 +20,22 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const userProfile = await getProfile();
-        setProfile(userProfile);
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            const userProfile = await getProfile();
+            setProfile(userProfile);
 
-        if (userProfile.subscriptionTier === "free") {
-          const remaining = await getUserFreeNotesRemaining();
-          setRemainingNotes(remaining);
-        }
+            if (userProfile.subscriptionTier === "free") {
+              const remaining = await getUserFreeNotesRemaining();
+              setRemainingNotes(remaining);
+            } else {
+              setRemainingNotes("∞");
+            }
 
-        setLoading(false);
+            setLoading(false);
+            unsubscribe();
+          }
+        });
       } catch (err) {
         console.error("Error loading dashboard:", err);
         setLoading(false);
@@ -50,26 +57,33 @@ export default function Dashboard() {
     );
   }
 
+  const displayName = profile?.preferredName || profile?.firstName || "User";
+  const occupation = profile?.occupation || "Not set";
+  const subscriptionTier = profile?.subscriptionTier || "free";
+
   return (
     <Box maxWidth={600} mx="auto" mt={4}>
       <Typography variant="h4" gutterBottom>
-        Welcome back!
+        Welcome, {displayName}.
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        Occupation: {occupation}
       </Typography>
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6">Your Plan:</Typography>
           <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-            {profile.subscriptionTier || "free"}
+            {subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)}
           </Typography>
 
-          {profile.subscriptionTier === "free" && (
+          {subscriptionTier === "free" ? (
             <>
               <Typography variant="body2" color="text.secondary" mt={1}>
                 You have <strong>{remainingNotes}</strong> of 15 free notes remaining.
               </Typography>
 
-              {remainingNotes <= 3 && (
+              {typeof remainingNotes === "number" && remainingNotes <= 3 && (
                 <Typography color="error" mt={1}>
                   You're almost out of free notes! Upgrade your plan to continue uninterrupted.
                 </Typography>
@@ -84,6 +98,10 @@ export default function Dashboard() {
                 View Plans
               </Button>
             </>
+          ) : (
+            <Typography variant="body2" color="text.secondary" mt={1}>
+              You have unlimited notes remaining. 🎉
+            </Typography>
           )}
         </CardContent>
       </Card>

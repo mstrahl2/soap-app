@@ -50,6 +50,11 @@ const allFeatures = Array.from(
 );
 
 export default function MyAccount() {
+  const handleChoosePlan = (planName) => {
+    // TODO: Add subscription or upgrade logic here
+    alert(`You chose the ${planName} plan. (Upgrade logic coming soon!)`);
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       <Typography variant="h4" align="center" gutterBottom>
@@ -108,6 +113,8 @@ export default function MyAccount() {
                 variant="contained"
                 fullWidth
                 sx={{ mt: 3 }}
+                onClick={() => handleChoosePlan(plan.name)}
+                aria-label={`Choose the ${plan.name} plan`}
               >
                 Choose {plan.name}
               </Button>

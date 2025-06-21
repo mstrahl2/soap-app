@@ -19,6 +19,7 @@ export default function NoteDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [shareError, setShareError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function NoteDetail() {
   }, [id]);
 
   const handleExport = () => {
+    if (!note) return;
     const blob = new Blob([note.formattedNote || ""], {
       type: "text/plain;charset=utf-8",
     });
@@ -56,6 +58,7 @@ export default function NoteDetail() {
   };
 
   const handleShare = async () => {
+    if (!note) return;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -64,13 +67,14 @@ export default function NoteDetail() {
         });
       } catch (error) {
         console.error("Error sharing:", error);
+        setShareError("Sharing was cancelled or failed.");
       }
     } else {
       try {
         await navigator.clipboard.writeText(note.formattedNote || "");
         setCopied(true);
       } catch (err) {
-        alert("Unable to copy to clipboard.");
+        setShareError("Unable to copy to clipboard.");
       }
     }
   };
@@ -106,20 +110,35 @@ export default function NoteDetail() {
         {note.formattedNote || "No content available."}
       </Typography>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 4 }}>
         <Button
           variant="contained"
           onClick={() => navigate(`/edit-note/${id}`)}
+          aria-label="Edit note"
         >
           Edit
         </Button>
-        <Button variant="outlined" onClick={handleExport}>
+        <Button
+          variant="outlined"
+          onClick={handleExport}
+          aria-label="Export note"
+          disabled={loading || !note}
+        >
           Export
         </Button>
-        <Button variant="outlined" onClick={handleShare}>
+        <Button
+          variant="outlined"
+          onClick={handleShare}
+          aria-label="Share note"
+          disabled={loading || !note}
+        >
           Share
         </Button>
-        <Button variant="text" onClick={() => navigate(-1)}>
+        <Button
+          variant="text"
+          onClick={() => navigate(-1)}
+          aria-label="Back"
+        >
           Back
         </Button>
       </Stack>
@@ -129,6 +148,13 @@ export default function NoteDetail() {
         autoHideDuration={3000}
         onClose={() => setCopied(false)}
         message="Note copied to clipboard!"
+      />
+
+      <Snackbar
+        open={!!shareError}
+        autoHideDuration={3000}
+        onClose={() => setShareError("")}
+        message={shareError}
       />
     </Box>
   );

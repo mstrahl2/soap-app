@@ -1,4 +1,3 @@
-// src/pages/Signup.jsx
 import React, { useState } from "react";
 import {
   AppBar,
@@ -12,23 +11,39 @@ import {
   TextField,
   Link,
   Alert,
+  MenuItem,
 } from "@mui/material";
 import { useNavigate, NavLink } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
+import { createUserProfile } from "../firebase/firestoreHelper";
+
+const occupations = [
+  "Mental Health Therapist",
+  "Physical Therapist",
+  "Occupational Therapist",
+  "Speech Therapist",
+  "Medical Doctor",
+  "Nurse Practitioner",
+  "Social Worker",
+  "Other",
+];
 
 export default function Signup() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [occupation, setOccupation] = useState("");
   const [error, setError] = useState("");
 
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      await createUserProfile(occupation); // pass occupation here
+      navigate("/profile-update"); // redirect to profile update first
     } catch (err) {
+      console.error("Signup error:", err);
       setError(err.message);
     }
   };
@@ -73,6 +88,21 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <TextField
+                label="Occupation"
+                select
+                fullWidth
+                margin="normal"
+                value={occupation}
+                onChange={(e) => setOccupation(e.target.value)}
+                required
+              >
+                {occupations.map((occ) => (
+                  <MenuItem key={occ} value={occ}>
+                    {occ}
+                  </MenuItem>
+                ))}
+              </TextField>
               <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
                 Sign Up
               </Button>

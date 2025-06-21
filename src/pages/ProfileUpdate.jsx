@@ -1,4 +1,3 @@
-// src/pages/ProfileUpdate.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/firebaseConfig";
@@ -81,7 +80,7 @@ export default function ProfileUpdate() {
       const docRef = doc(db, "users", auth.currentUser.uid);
       await setDoc(docRef, profile, { merge: true });
       setSuccess("Profile saved successfully!");
-      setTimeout(() => navigate("/dashboard"), 1500);
+      setTimeout(() => navigate("/dashboard"), 1500); // Redirect to dashboard after save
     } catch (err) {
       setError("Failed to save profile: " + err.message);
     }

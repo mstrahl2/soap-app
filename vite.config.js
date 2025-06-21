@@ -69,12 +69,17 @@ export default defineConfig({
           {
             src: 'screenshots/mobile-375x667.png',
             sizes: '375x667',
-            type: 'image/png'  // <-- added missing comma here
+            type: 'image/png'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json}'],
+        navigateFallback: '/',
+        navigateFallbackAllowlist: [
+          // Exclude manifest.webmanifest from SPA fallback routing
+          new RegExp('^(?!/manifest\\.webmanifest).*$')
+        ]
       },
       devOptions: {
         enabled: true,

@@ -55,12 +55,13 @@ export default function NewNote() {
   }, []);
 
   const handleStartStop = () => {
-    if (!("webkitSpeechRecognition" in window)) {
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
       alert("Speech recognition is not supported in this browser.");
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!recognitionRef.current) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
@@ -135,7 +136,7 @@ export default function NewNote() {
 
     try {
       setLoading(true);
-      console.log("Saving note:", { title, noteType, rawNote, formattedNote });
+      setError("");
       await saveNote({
         title,
         noteType,
@@ -185,6 +186,7 @@ export default function NewNote() {
           value={noteType}
           onChange={(e) => setNoteType(e.target.value)}
           fullWidth
+          required
         >
           {noteTypes.map((option) => (
             <MenuItem key={option.value} value={option.value}>
@@ -210,7 +212,11 @@ export default function NewNote() {
           {speechActive ? "Stop Recording" : "Start Recording"}
         </Button>
 
-        <Button variant="contained" onClick={handleGenerate} disabled={loading}>
+        <Button
+          variant="contained"
+          onClick={handleGenerate}
+          disabled={loading}
+        >
           Generate SOAP Note
         </Button>
 

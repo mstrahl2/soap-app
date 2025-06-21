@@ -1,3 +1,4 @@
+// src/firebase/firestoreHelper.js
 import {
   doc,
   getDoc,
@@ -14,7 +15,6 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 
-// Get the user's profile document from Firestore
 export async function getProfile() {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("User not authenticated");
@@ -25,7 +25,6 @@ export async function getProfile() {
   return docSnap.data();
 }
 
-// Update user profile fields (partial update)
 export async function updateProfile(data) {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("User not authenticated");
@@ -34,7 +33,6 @@ export async function updateProfile(data) {
   await updateDoc(docRef, data);
 }
 
-// Add a new note for the current user
 export async function addNote(noteData) {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("User not authenticated");
@@ -50,7 +48,6 @@ export async function addNote(noteData) {
   return docRef.id;
 }
 
-// Update an existing note by its ID
 export async function updateNoteById(noteId, data) {
   if (!noteId) throw new Error("Note ID is required");
 
@@ -61,7 +58,6 @@ export async function updateNoteById(noteId, data) {
   });
 }
 
-// Delete a note by its ID
 export async function deleteNoteById(noteId) {
   if (!noteId) throw new Error("Note ID is required");
 
@@ -69,7 +65,6 @@ export async function deleteNoteById(noteId) {
   await deleteDoc(docRef);
 }
 
-// Get notes for current user, ordered newest first
 export async function getUserNotes() {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("User not authenticated");
@@ -77,13 +72,12 @@ export async function getUserNotes() {
   const q = query(
     collection(db, "notes"),
     where("userId", "==", uid),
-    orderBy("createdAt", "desc") // newest first
+    orderBy("createdAt", "desc")
   );
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
-// Get the remaining free notes count (out of limit, default 15)
 export async function getUserFreeNotesRemaining(limit = 15) {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("User not authenticated");
@@ -94,7 +88,6 @@ export async function getUserFreeNotesRemaining(limit = 15) {
   return Math.max(0, limit - used);
 }
 
-// Get a single note by its ID
 export async function getNoteById(noteId) {
   if (!noteId) throw new Error("Note ID is required");
 
@@ -102,4 +95,22 @@ export async function getNoteById(noteId) {
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) throw new Error("Note not found");
   return { id: docSnap.id, ...docSnap.data() };
+}
+
+// Accept optional occupation string, can be empty
+export async function createUserProfile(occupation = "") {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No authenticated user");
+
+  const profileRef = doc(db, "users", user.uid);
+  const existing = await getDoc(profileRef);
+  if (!existing.exists()) {
+    await setDoc(profileRef, {
+      uid: user.uid,
+      email: user.email,
+      subscriptionTier: "free",
+      occupation,
+      createdAt: new Date().toISOString(),
+    });
+  }
 }

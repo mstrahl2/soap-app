@@ -17,12 +17,12 @@ import MyAccount from "./pages/MyAccount";
 import EditNote from "./pages/EditNote";
 import NoteDetail from "./pages/NoteDetail";
 import ErrorBoundary from "./components/ErrorBoundary";
+import RequireProfileComplete from "./components/RequireProfileComplete";
 
 function RequireAuth({ user, children }) {
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
-  // You could add tier-based redirects or other auth logic here if needed
   return children;
 }
 
@@ -61,11 +61,11 @@ export default function App() {
       <Route path="/" element={<PublicLayout />}>
         <Route
           path="login"
-          element={!user ? <Login /> : <Navigate to="/dashboard" />}
+          element={!user ? <Login /> : <Navigate to="/dashboard" replace />}
         />
         <Route
           path="signup"
-          element={!user ? <Signup /> : <Navigate to="/dashboard" />}
+          element={!user ? <Signup /> : <Navigate to="/dashboard" replace />}
         />
       </Route>
 
@@ -75,7 +75,9 @@ export default function App() {
           path="dashboard"
           element={
             <RequireAuth user={user}>
-              <Dashboard />
+              <RequireProfileComplete>
+                <Dashboard />
+              </RequireProfileComplete>
             </RequireAuth>
           }
         />
@@ -149,7 +151,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route index element={<Navigate to="dashboard" />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 
       {/* Catch-all */}

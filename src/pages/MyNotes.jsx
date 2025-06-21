@@ -15,6 +15,11 @@ import {
   Stack,
   CircularProgress,
   TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -39,6 +44,8 @@ export default function MyNotes() {
   const [remaining, setRemaining] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,6 +55,7 @@ export default function MyNotes() {
 
   const fetchNotes = async () => {
     setLoading(true);
+    setError("");
     try {
       const prof = await getProfile();
       setProfile(prof);
@@ -70,6 +78,7 @@ export default function MyNotes() {
 
   useEffect(() => {
     fetchNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply filtering and sorting
@@ -93,14 +102,30 @@ export default function MyNotes() {
     // Sorting
     if (sortOption === "newest") {
       filtered.sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        const aTime = a.createdAt
+          ? a.createdAt.toDate
+            ? a.createdAt.toDate().getTime()
+            : new Date(a.createdAt).getTime()
+          : 0;
+        const bTime = b.createdAt
+          ? b.createdAt.toDate
+            ? b.createdAt.toDate().getTime()
+            : new Date(b.createdAt).getTime()
+          : 0;
         return bTime - aTime;
       });
     } else if (sortOption === "oldest") {
       filtered.sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        const aTime = a.createdAt
+          ? a.createdAt.toDate
+            ? a.createdAt.toDate().getTime()
+            : new Date(a.createdAt).getTime()
+          : 0;
+        const bTime = b.createdAt
+          ? b.createdAt.toDate
+            ? b.createdAt.toDate().getTime()
+            : new Date(b.createdAt).getTime()
+          : 0;
         return aTime - bTime;
       });
     } else if (sortOption === "title-asc") {
@@ -131,13 +156,19 @@ export default function MyNotes() {
     applyFiltersAndSort(notes, selectedType, searchQuery, value);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
+    setDeleteLoadingId(confirmDeleteId);
+    setError("");
     try {
-      await deleteNoteById(id);
+      await deleteNoteById(confirmDeleteId);
+      setConfirmDeleteId(null);
       fetchNotes();
     } catch (err) {
       console.error(err);
       setError("Failed to delete note.");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
@@ -237,11 +268,22 @@ export default function MyNotes() {
                   >
                     View
                   </Button>
-                  <IconButton onClick={() => navigate(`/edit-note/${note.id}`)} aria-label="edit">
+                  <IconButton
+                    onClick={() => navigate(`/edit-note/${note.id}`)}
+                    aria-label="edit"
+                  >
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(note.id)} aria-label="delete">
-                    <DeleteIcon />
+                  <IconButton
+                    onClick={() => setConfirmDeleteId(note.id)}
+                    aria-label="delete"
+                    disabled={deleteLoadingId === note.id}
+                  >
+                    {deleteLoadingId === note.id ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <DeleteIcon />
+                    )}
                   </IconButton>
                   <IconButton onClick={() => handleExport(note)} aria-label="export">
                     <DownloadIcon />
@@ -275,6 +317,33 @@ export default function MyNotes() {
           </Button>
         </Stack>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        aria-labelledby="confirm-delete-title"
+      >
+        <DialogTitle id="confirm-delete-title">Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this note? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteId(null)} disabled={!!deleteLoadingId}>
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            onClick={handleDelete}
+            disabled={!!deleteLoadingId}
+            autoFocus
+          >
+            {deleteLoadingId ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

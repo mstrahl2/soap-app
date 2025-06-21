@@ -16,6 +16,7 @@ import {
 import { useNavigate, NavLink } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
+import { getProfile } from "../firebase/firestoreHelper";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,11 +24,24 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  async function postLoginRedirect() {
+    try {
+      const profile = await getProfile();
+      if (!profile.occupation) {
+        navigate("/profile-setup");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch {
+      navigate("/profile-setup");
+    }
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      await postLoginRedirect();
     } catch (err) {
       setError(err.message);
     }
