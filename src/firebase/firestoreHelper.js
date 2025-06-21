@@ -1,4 +1,3 @@
-// src/firebase/firestoreHelper.jsx
 import {
   getFirestore,
   doc,
@@ -116,5 +115,5 @@ export async function getUserFreeNotesRemaining() {
   return 15 - usedCount;
 }
 
-
+// Alias for backward compatibility or semantic clarity
 export { saveUserProfile as createUserProfile };

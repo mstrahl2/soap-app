@@ -1,4 +1,3 @@
-// src/pages/Signup.jsx
 import React, { useState } from "react";
 import {
   AppBar,
@@ -18,7 +17,7 @@ import {
 import { useNavigate, NavLink } from "react-router-dom";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
-import { saveUserProfile } from "../firebase/firestoreHelper";
+import { createUserProfile } from "../firebase/firestoreHelper";
 
 const occupations = [
   "Mental Health Therapist",
@@ -42,7 +41,7 @@ export default function Signup() {
     e.preventDefault();
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      await saveUserProfile(user.uid, {
+      await createUserProfile(user.uid, {
         occupation,
         subscriptionTier: "free",
       });
@@ -57,8 +56,13 @@ export default function Signup() {
     setError("");
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // Optional: create profile for Google users if needed here
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      // Create profile if does not exist
+      await createUserProfile(user.uid, {
+        occupation: "Other",
+        subscriptionTier: "free",
+      });
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -127,7 +131,11 @@ export default function Signup() {
 
             <Divider sx={{ my: 3 }}>OR</Divider>
 
-            <Button variant="outlined" fullWidth onClick={handleGoogleSignIn}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={handleGoogleSignIn}
+            >
               Sign up with Google
             </Button>
 
