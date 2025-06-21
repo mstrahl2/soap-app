@@ -1,5 +1,4 @@
-// src/components/Layout.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
@@ -17,6 +16,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import NoteIcon from "@mui/icons-material/Note";
+import { isAdmin } from "../firebase/firestoreHelper";
 
 const tabRoutes = ["/dashboard", "/new-note", "/my-notes"];
 
@@ -26,14 +26,29 @@ export default function Layout() {
   const currentIdx = tabRoutes.findIndex((r) =>
     location.pathname.startsWith(r)
   );
-  const [tabVal, setTabVal] = React.useState(currentIdx >= 0 ? currentIdx : 0);
+  const [tabVal, setTabVal] = useState(currentIdx >= 0 ? currentIdx : 0);
+  const [admin, setAdmin] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const idx = tabRoutes.findIndex((r) =>
       location.pathname.startsWith(r)
     );
     if (idx >= 0 && idx !== tabVal) setTabVal(idx);
   }, [location.pathname]);
+
+  // Check admin status on mount and auth changes
+  useEffect(() => {
+    async function checkAdmin() {
+      try {
+        const adminStatus = await isAdmin();
+        setAdmin(adminStatus);
+      } catch (error) {
+        console.error("Failed to check admin status:", error);
+        setAdmin(false);
+      }
+    }
+    checkAdmin();
+  }, []);
 
   const handleTab = (_, newVal) => {
     setTabVal(newVal);
@@ -62,6 +77,16 @@ export default function Layout() {
             SOAP App
           </Typography>
           <Box>
+            {admin && (
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => navigate("/admin")}
+                sx={{ mr: 2 }}
+              >
+                Admin
+              </Button>
+            )}
             <Link
               component={NavLink}
               to="/my-account"
