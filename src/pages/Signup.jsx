@@ -1,3 +1,4 @@
+// src/pages/Signup.jsx
 import React, { useState } from "react";
 import {
   AppBar,
@@ -40,14 +41,11 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await saveUserProfile(user.uid, {
         occupation,
         subscriptionTier: "free",
       });
-
       navigate("/dashboard");
     } catch (err) {
       console.error("Signup error:", err);
@@ -59,14 +57,8 @@ export default function Signup() {
     setError("");
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      await saveUserProfile(user.uid, {
-        occupation: "Other",
-        subscriptionTier: "free",
-      });
-
+      await signInWithPopup(auth, provider);
+      // Optional: create profile for Google users if needed here
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
