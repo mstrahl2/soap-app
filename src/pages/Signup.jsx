@@ -1,3 +1,4 @@
+// src/pages/Signup.jsx
 import React, { useState } from "react";
 import {
   AppBar,
@@ -12,9 +13,10 @@ import {
   Link,
   Alert,
   MenuItem,
+  Divider,
 } from "@mui/material";
 import { useNavigate, NavLink } from "react-router-dom";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 import { createUserProfile } from "../firebase/firestoreHelper";
 
@@ -40,10 +42,22 @@ export default function Signup() {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      await createUserProfile(occupation); // pass occupation here
-      navigate("/profile-update"); // redirect to profile update first
+      await createUserProfile(occupation);
+      navigate("/dashboard");
     } catch (err) {
       console.error("Signup error:", err);
+      setError(err.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      // Optional: You can call createUserProfile here if you want to create a profile on Google sign-in
+      navigate("/dashboard");
+    } catch (err) {
       setError(err.message);
     }
   };
@@ -106,13 +120,24 @@ export default function Signup() {
               <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
                 Sign Up
               </Button>
-              <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
-                Already have an account?{" "}
-                <Link component={NavLink} to="/login">
-                  Log In
-                </Link>
-              </Typography>
             </Box>
+
+            <Divider sx={{ my: 3 }}>OR</Divider>
+
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={handleGoogleSignIn}
+            >
+              Sign up with Google
+            </Button>
+
+            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+              Already have an account?{" "}
+              <Link component={NavLink} to="/login">
+                Log In
+              </Link>
+            </Typography>
           </CardContent>
         </Card>
       </Container>

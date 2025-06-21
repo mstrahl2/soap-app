@@ -4,6 +4,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase/firebaseConfig";
 
+import { getProfile } from "./firebase/firestoreHelper";
+
 import Layout from "./components/Layout";
 import PublicLayout from "./components/PublicLayout";
 import Dashboard from "./pages/Dashboard";
@@ -16,23 +18,39 @@ import Profile from "./pages/Profile";
 import MyAccount from "./pages/MyAccount";
 import EditNote from "./pages/EditNote";
 import NoteDetail from "./pages/NoteDetail";
+import AdminPanel from "./pages/AdminPanel";
+
 import ErrorBoundary from "./components/ErrorBoundary";
 import RequireProfileComplete from "./components/RequireProfileComplete";
 
 function RequireAuth({ user, children }) {
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function RequireAdmin({ profile, children }) {
+  if (!profile || profile.role !== "admin") return <Navigate to="/dashboard" replace />;
   return children;
 }
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        try {
+          const prof = await getProfile();
+          setProfile(prof);
+        } catch (err) {
+          console.error("Failed to fetch profile:", err);
+        }
+      } else {
+        setProfile(null);
+      }
       setAuthChecked(true);
     });
     return () => unsubscribe();
@@ -151,6 +169,19 @@ export default function App() {
             </RequireAuth>
           }
         />
+        <Route
+          path="admin"
+          element={
+            <RequireAuth user={user}>
+              <RequireAdmin profile={profile}>
+                <ErrorBoundary>
+                  <AdminPanel />
+                </ErrorBoundary>
+              </RequireAdmin>
+            </RequireAuth>
+          }
+        />
+
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 
