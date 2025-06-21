@@ -18,7 +18,7 @@ import {
 import { useNavigate, NavLink } from "react-router-dom";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
-import { createUserProfile } from "../firebase/firestoreHelper";
+import { saveUserProfile } from "../firebase/firestoreHelper";
 
 const occupations = [
   "Mental Health Therapist",
