@@ -26,8 +26,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useNavigate } from "react-router-dom";
 import {
-  getUserNotes,
-  deleteNoteById,
+  getNotes,
+  deleteNote,
   getProfile,
   getUserFreeNotesRemaining,
 } from "../firebase/firestoreHelper";
@@ -60,7 +60,7 @@ export default function MyNotes() {
       const prof = await getProfile();
       setProfile(prof);
 
-      const userNotes = await getUserNotes();
+      const userNotes = await getNotes();
       setNotes(userNotes);
       applyFiltersAndSort(userNotes, selectedType, searchQuery, sortBy);
 
@@ -161,7 +161,7 @@ export default function MyNotes() {
     setDeleteLoadingId(confirmDeleteId);
     setError("");
     try {
-      await deleteNoteById(confirmDeleteId);
+      await deleteNote(confirmDeleteId);
       setConfirmDeleteId(null);
       fetchNotes();
     } catch (err) {
