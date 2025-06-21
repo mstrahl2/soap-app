@@ -1,0 +1,44 @@
+/* App.css */
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Ensure main content fills remaining space between header and footer */
+main {
+  flex: 1 0 auto;
+  padding: 1rem;
+  max-width: 700px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Footer styling */
+footer {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  color: #666;
+  font-size: 0.9rem;
+}
