@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
-import { createProfile } from "../firebase/firestoreHelper";
+import { createUserProfile } from "../firebase/firestoreHelper";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -38,7 +38,7 @@ export default function Signup() {
         password
       );
       const user = userCredential.user;
-      await createProfile(user.uid); // creates default profile
+      await createUserProfile(user.uid); // creates default profile
       navigate("/profile-update");
     } catch (err) {
       setError(err.message);
