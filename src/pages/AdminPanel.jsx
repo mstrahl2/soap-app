@@ -14,14 +14,24 @@ import {
   MenuItem,
   Alert,
   Box,
+  CircularProgress,
 } from "@mui/material";
-import { getAllUsers, updateUserRole, isAdmin } from "../firebase/firestoreHelper";
+import {
+  getAllUsers,
+  isAdmin,
+  updateUserRole,
+  updateUserTier,
+} from "../firebase/firestoreHelper";
 import { useNavigate } from "react-router-dom";
+
+const roles = ["free", "premium", "admin"];
+const tiers = ["Free", "Pro", "Team"];
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +45,7 @@ export default function AdminPanel() {
         }
       } catch (err) {
         setError("Error verifying admin access.");
+        setLoading(false);
       }
     };
     checkAdmin();
@@ -42,10 +53,13 @@ export default function AdminPanel() {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const allUsers = await getAllUsers();
       setUsers(allUsers);
+      setLoading(false);
     } catch (err) {
       setError("Failed to load users.");
+      setLoading(false);
     }
   };
 
@@ -53,11 +67,40 @@ export default function AdminPanel() {
     try {
       await updateUserRole(userId, newRole);
       setSuccess("User role updated.");
+      setError("");
       fetchUsers();
     } catch (err) {
       setError("Failed to update role.");
+      setSuccess("");
     }
   };
+
+  const handleTierChange = async (userId, newTier) => {
+    try {
+      await updateUserTier(userId, newTier);
+      setSuccess("User tier updated.");
+      setError("");
+      fetchUsers();
+    } catch (err) {
+      setError("Failed to update tier.");
+      setSuccess("");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "80vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container sx={{ py: 4 }}>
@@ -65,8 +108,16 @@ export default function AdminPanel() {
         Admin Panel
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {success}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>
@@ -75,6 +126,8 @@ export default function AdminPanel() {
               <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
               <TableCell>Change Role</TableCell>
+              <TableCell>Tier</TableCell>
+              <TableCell>Change Tier</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -88,9 +141,26 @@ export default function AdminPanel() {
                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
                     size="small"
                   >
-                    <MenuItem value="free">Free</MenuItem>
-                    <MenuItem value="premium">Premium</MenuItem>
-                    <MenuItem value="admin">Admin</MenuItem>
+                    {roles.map((role) => (
+                      <MenuItem key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </TableCell>
+
+                <TableCell>{user.tier || "Free"}</TableCell>
+                <TableCell>
+                  <Select
+                    value={user.tier || "Free"}
+                    onChange={(e) => handleTierChange(user.id, e.target.value)}
+                    size="small"
+                  >
+                    {tiers.map((tier) => (
+                      <MenuItem key={tier} value={tier}>
+                        {tier}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </TableCell>
               </TableRow>

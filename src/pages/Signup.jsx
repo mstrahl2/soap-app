@@ -1,156 +1,125 @@
+// src/pages/Signup.jsx
 import React, { useState } from "react";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
-  AppBar,
-  Toolbar,
-  Typography,
   Box,
   Button,
-  Card,
-  CardContent,
-  Container,
   TextField,
+  Typography,
   Link,
+  Checkbox,
+  FormControlLabel,
   Alert,
-  MenuItem,
-  Divider,
 } from "@mui/material";
-import { useNavigate, NavLink } from "react-router-dom";
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
-import { createUserProfile } from "../firebase/firestoreHelper";
-
-const occupations = [
-  "Mental Health Therapist",
-  "Physical Therapist",
-  "Occupational Therapist",
-  "Speech Therapist",
-  "Medical Doctor",
-  "Nurse Practitioner",
-  "Social Worker",
-  "Other",
-];
+import { createProfile } from "../firebase/firestoreHelper";
 
 export default function Signup() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [occupation, setOccupation] = useState("");
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    try {
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      await createUserProfile(user.uid, {
-        occupation,
-        subscriptionTier: "free",
-      });
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Signup error:", err);
-      setError(err.message);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
     setError("");
-    const provider = new GoogleAuthProvider();
+
+    if (!agreeToTerms) {
+      setError("You must agree to the terms to create an account.");
+      return;
+    }
+
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      // Create profile if does not exist
-      await createUserProfile(user.uid, {
-        occupation: "Other",
-        subscriptionTier: "free",
-      });
-      navigate("/dashboard");
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+      await createProfile(user.uid); // creates default profile
+      navigate("/profile-update");
     } catch (err) {
       setError(err.message);
     }
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "#fff" }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div">
-            SOAP App
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <Box>
+      <Typography variant="h5" gutterBottom>
+        Sign Up
+      </Typography>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      <form onSubmit={handleSignup}>
+        <TextField
+          label="Email"
+          fullWidth
+          margin="normal"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          label="Password"
+          fullWidth
+          margin="normal"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-      <Container maxWidth="sm" sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-        <Card sx={{ width: "100%" }}>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Create an account
-            </Typography>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            <Box component="form" onSubmit={handleSignup} noValidate>
-              <TextField
-                label="Email"
-                fullWidth
-                type="email"
-                margin="normal"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <TextField
-                label="Password"
-                fullWidth
-                type="password"
-                margin="normal"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <TextField
-                label="Occupation"
-                select
-                fullWidth
-                margin="normal"
-                value={occupation}
-                onChange={(e) => setOccupation(e.target.value)}
-                required
-              >
-                {occupations.map((occ) => (
-                  <MenuItem key={occ} value={occ}>
-                    {occ}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
-                Sign Up
-              </Button>
-            </Box>
-
-            <Divider sx={{ my: 3 }}>OR</Divider>
-
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleGoogleSignIn}
-            >
-              Sign up with Google
-            </Button>
-
-            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
-              Already have an account?{" "}
-              <Link component={NavLink} to="/login">
-                Log In
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={agreeToTerms}
+              onChange={(e) => setAgreeToTerms(e.target.checked)}
+              required
+            />
+          }
+          label={
+            <Typography variant="body2">
+              I agree to the{" "}
+              <Link component={RouterLink} to="/terms">
+                Terms of Service
               </Link>
+              ,{" "}
+              <Link component={RouterLink} to="/privacy">
+                Privacy Policy
+              </Link>
+              , and{" "}
+              <Link component={RouterLink} to="/disclaimer">
+                Medical Disclaimer
+              </Link>
+              .
             </Typography>
-          </CardContent>
-        </Card>
-      </Container>
+          }
+          sx={{ mt: 2 }}
+        />
 
-      <Box component="footer" sx={{ py: 2, textAlign: "center", bgcolor: "#f0f0f0", mt: "auto" }}>
-        <Typography variant="body2">© {new Date().getFullYear()} SOAP App</Typography>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 2 }}
+          disabled={!agreeToTerms}
+        >
+          Sign Up
+        </Button>
+      </form>
+      <Box mt={2}>
+        <Typography variant="body2">
+          Already have an account?{" "}
+          <Link component={RouterLink} to="/login">
+            Login
+          </Link>
+        </Typography>
       </Box>
     </Box>
   );

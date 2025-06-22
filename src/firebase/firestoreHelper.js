@@ -15,6 +15,28 @@ const db = getFirestore();
 
 // Save or update user profile
 export async function saveUserProfile(uid, data) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("User not authenticated");
+
+  // Prevent user from updating their own role or tier unless admin
+  if (
+    (data.role !== undefined || data.tier !== undefined) &&
+    currentUser.uid === uid
+  ) {
+    const profile = await getProfile();
+    if (profile.role !== "admin") {
+      throw new Error("Users cannot update their own role or tier");
+    }
+  }
+
+  // Prevent user from updating another user's role/tier via this function
+  if (
+    (data.role !== undefined || data.tier !== undefined) &&
+    currentUser.uid !== uid
+  ) {
+    throw new Error("Cannot update another user's role or tier here");
+  }
+
   await setDoc(doc(db, "users", uid), data, { merge: true });
 }
 
@@ -28,7 +50,7 @@ export async function getProfile() {
   return docSnap.exists() ? docSnap.data() : null;
 }
 
-// Check if the current user is an admin
+// Check if the current user is an admin (role === "admin")
 export async function isAdmin() {
   const profile = await getProfile();
   return profile?.role === "admin";
@@ -36,6 +58,11 @@ export async function isAdmin() {
 
 // Get all users (admin only)
 export async function getAllUsers() {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("User not authenticated");
+  const profile = await getProfile();
+  if (profile.role !== "admin") throw new Error("Not authorized");
+
   const snapshot = await getDocs(collection(db, "users"));
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -45,8 +72,24 @@ export async function getAllUsers() {
 
 // Update any user's role (admin only)
 export async function updateUserRole(userId, newRole) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("User not authenticated");
+  const profile = await getProfile();
+  if (profile.role !== "admin") throw new Error("Not authorized");
+
   const userRef = doc(db, "users", userId);
   await updateDoc(userRef, { role: newRole });
+}
+
+// Update any user's tier (admin only)
+export async function updateUserTier(userId, newTier) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("User not authenticated");
+  const profile = await getProfile();
+  if (profile.role !== "admin") throw new Error("Not authorized");
+
+  const userRef = doc(db, "users", userId);
+  await updateDoc(userRef, { tier: newTier });
 }
 
 // Save a new note

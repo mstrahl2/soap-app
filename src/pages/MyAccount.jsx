@@ -1,4 +1,3 @@
-// src/pages/MyAccount.jsx
 import React from "react";
 import {
   Box,
@@ -8,11 +7,13 @@ import {
   Grid,
   Button,
   Divider,
+  Link,
 } from "@mui/material";
 
 const plans = [
   {
-    name: "Free",
+    name: "free",
+    displayName: "Free",
     price: "$0",
     description: "Up to 15 notes",
     features: [
@@ -22,7 +23,8 @@ const plans = [
     ],
   },
   {
-    name: "Pro",
+    name: "pro",
+    displayName: "Pro",
     price: "$9/mo",
     description: "Unlimited notes + export/share",
     features: [
@@ -33,7 +35,8 @@ const plans = [
     ],
   },
   {
-    name: "Team",
+    name: "team",
+    displayName: "Team",
     price: "$25/mo",
     description: "For small practices",
     features: [
@@ -51,7 +54,6 @@ const allFeatures = Array.from(
 
 export default function MyAccount() {
   const handleChoosePlan = (planName) => {
-    // TODO: Add subscription or upgrade logic here
     alert(`You chose the ${planName} plan. (Upgrade logic coming soon!)`);
   };
 
@@ -79,7 +81,7 @@ export default function MyAccount() {
               }}
             >
               <Typography variant="h6" gutterBottom align="center">
-                {plan.name}
+                {plan.displayName}
               </Typography>
               <Typography
                 variant="h4"
@@ -114,14 +116,33 @@ export default function MyAccount() {
                 fullWidth
                 sx={{ mt: 3 }}
                 onClick={() => handleChoosePlan(plan.name)}
-                aria-label={`Choose the ${plan.name} plan`}
+                aria-label={`Choose the ${plan.displayName} plan`}
               >
-                Choose {plan.name}
+                Choose {plan.displayName}
               </Button>
             </Paper>
           </Grid>
         ))}
       </Grid>
+
+      {/* Legal Links Section */}
+      <Divider sx={{ my: 5 }} />
+      <Box textAlign="center">
+        <Typography variant="subtitle1" gutterBottom>
+          Legal & Policy Documents
+        </Typography>
+        <Box display="flex" justifyContent="center" gap={3} flexWrap="wrap">
+          <Link href="/terms" underline="hover">
+            Terms of Service
+          </Link>
+          <Link href="/privacy" underline="hover">
+            Privacy Policy
+          </Link>
+          <Link href="/disclaimer" underline="hover">
+            Medical Disclaimer
+          </Link>
+        </Box>
+      </Box>
     </Container>
   );
 }

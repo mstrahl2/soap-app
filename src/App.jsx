@@ -23,6 +23,11 @@ import AdminPanel from "./pages/AdminPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 import RequireProfileComplete from "./components/RequireProfileComplete";
 
+// ✅ New legal pages
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Disclaimer from "./pages/Disclaimer";
+
 function RequireAuth({ user, children }) {
   if (!user) return <Navigate to="/login" replace />;
   return children;
@@ -85,6 +90,11 @@ export default function App() {
           path="signup"
           element={!user ? <Signup /> : <Navigate to="/dashboard" replace />}
         />
+
+        {/* ✅ Legal public routes */}
+        <Route path="privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="terms-of-service" element={<TermsOfService />} />
+        <Route path="disclaimer" element={<Disclaimer />} />
       </Route>
 
       {/* Protected routes */}
