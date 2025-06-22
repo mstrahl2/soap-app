@@ -1,4 +1,3 @@
-// src/components/Layout.jsx
 import React from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase/firebaseConfig";
@@ -52,7 +51,7 @@ export default function Layout() {
         bgcolor: "#ffffff",
         flexDirection: "column",
         display: "flex",
-        pb: "100px", // Space for bottom nav + footer
+        pb: "56px", // reserve space for fixed bottom nav + footer container
       }}
     >
       {/* Top App Bar */}
@@ -79,40 +78,56 @@ export default function Layout() {
       </AppBar>
 
       {/* Main Content */}
-      <Box sx={{ flex: 1, p: 3 }}>
+      <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
         <Outlet />
       </Box>
 
-      {/* Legal Footer */}
-      <Box sx={{ textAlign: "center", mt: 2, mb: 10, px: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          &copy; {new Date().getFullYear()} SOAP App. All rights reserved.
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mt={1}>
-          <Link component={NavLink} to="/privacy-policy" underline="hover">
-            Privacy Policy
-          </Link>
-          &nbsp;|&nbsp;
-          <Link component={NavLink} to="/terms-of-service" underline="hover">
-            Terms of Service
-          </Link>
-          &nbsp;|&nbsp;
-          <Link component={NavLink} to="/disclaimer" underline="hover">
-            Disclaimer
-          </Link>
-        </Typography>
-      </Box>
-
-      {/* Bottom Navigation */}
+      {/* Combined Fixed Bottom Nav + Footer */}
       <Paper
-        sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
-        elevation={3}
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          bgcolor: "#fff",
+          borderTop: "1px solid #ddd",
+          zIndex: (theme) => theme.zIndex.appBar,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          py: 0,
+        }}
+        elevation={8}
       >
         <BottomNavigation value={tabVal} onChange={handleTab} showLabels>
           <BottomNavigationAction label="Dashboard" icon={<DashboardIcon />} />
           <BottomNavigationAction label="New Note" icon={<AddCircleIcon />} />
           <BottomNavigationAction label="My Notes" icon={<NoteIcon />} />
         </BottomNavigation>
+
+        <Box
+          sx={{
+            fontSize: "0.75rem",
+            color: "text.secondary",
+            py: 0.5,
+            px: 2,
+            width: "100%",
+            textAlign: "center",
+            borderTop: "1px solid #ddd",
+            userSelect: "none",
+          }}
+        >
+          &copy; {new Date().getFullYear()} SOAP App. All rights reserved. &nbsp;|&nbsp;
+          <Link component={NavLink} to="/privacy-policy" underline="hover">
+            Privacy Policy
+          </Link> &nbsp;|&nbsp;
+          <Link component={NavLink} to="/terms-of-service" underline="hover">
+            Terms of Service
+          </Link> &nbsp;|&nbsp;
+          <Link component={NavLink} to="/disclaimer" underline="hover">
+            Disclaimer
+          </Link>
+        </Box>
       </Paper>
     </Box>
   );
