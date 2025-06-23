@@ -1,4 +1,3 @@
-// src/pages/UpgradePlan.jsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -40,15 +39,41 @@ export default function UpgradePlan() {
   }, []);
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateUserProfile({ plan: selectedPlan });
-      setCurrentPlan(selectedPlan);
-      setSuccessMsg("Plan updated successfully!");
-    } catch (err) {
-      console.error("Error updating plan:", err);
-    } finally {
-      setSaving(false);
+    if (selectedPlan === "free") {
+      setSaving(true);
+      try {
+        await updateUserProfile({ plan: selectedPlan });
+        setCurrentPlan(selectedPlan);
+        setSuccessMsg("Plan updated successfully!");
+      } catch (err) {
+        console.error("Error updating plan:", err);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      const priceIdMap = {
+        pro: "price_1RczPNRvfrmnvHuYe5qqGK0F",
+        group: "price_1RczQKRvfrmnvHuYJXkaNLq2",
+      };
+
+      try {
+        const res = await fetch("/api/create-checkout-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ priceId: priceIdMap[selectedPlan] }),
+        });
+
+        const data = await res.json();
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          alert("Failed to start checkout. Please try again.");
+        }
+      } catch (err) {
+        console.error("Checkout error:", err);
+      }
     }
   };
 
@@ -83,8 +108,16 @@ export default function UpgradePlan() {
         onChange={(e) => setSelectedPlan(e.target.value)}
       >
         <FormControlLabel value="free" control={<Radio />} label="Free Plan" />
-        <FormControlLabel value="pro" control={<Radio />} label="Pro Plan - For individuals" />
-        <FormControlLabel value="group" control={<Radio />} label="Group Plan - For teams or practices" />
+        <FormControlLabel
+          value="pro"
+          control={<Radio />}
+          label="Pro Plan – For individuals"
+        />
+        <FormControlLabel
+          value="group"
+          control={<Radio />}
+          label="Group Plan – For teams or practices"
+        />
       </RadioGroup>
 
       <Button
