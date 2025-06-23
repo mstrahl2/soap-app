@@ -1,4 +1,3 @@
-// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -75,9 +74,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json}'],
-        navigateFallback: '/',
+        navigateFallback: '/index.html',  // Changed here
         navigateFallbackAllowlist: [
-          // Exclude manifest.webmanifest from SPA fallback routing
           new RegExp('^(?!/manifest\\.webmanifest).*$')
         ]
       },
