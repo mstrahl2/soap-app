@@ -1,4 +1,3 @@
-// src/pages/UpgradePlan.jsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -13,6 +12,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { getProfile, updateUserProfile } from "../firebase/firestoreHelper";
+import { getAuth } from "firebase/auth"; // ✅ Import auth for token
 
 export default function UpgradePlan() {
   const navigate = useNavigate();
@@ -51,7 +51,6 @@ export default function UpgradePlan() {
     setErrorMsg("");
     setSuccessMsg("");
 
-    // If user selects free plan, just update profile immediately (no Stripe checkout)
     if (selectedPlan === "free") {
       setSaving(true);
       try {
@@ -67,13 +66,18 @@ export default function UpgradePlan() {
       return;
     }
 
-    // For Pro or Group plans, initiate Stripe Checkout session
     try {
       setSaving(true);
+
+      const auth = getAuth();
+      const user = auth.currentUser;
+      const token = await user.getIdToken(); // ✅ Get Firebase ID token
+
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ Send token to backend
         },
         body: JSON.stringify({ priceId: priceIdMap[selectedPlan] }),
       });
@@ -81,7 +85,6 @@ export default function UpgradePlan() {
       const data = await res.json();
 
       if (data?.url) {
-        // Redirect to Stripe Checkout page
         window.location.href = data.url;
       } else {
         setErrorMsg("Failed to start checkout. Please try again.");

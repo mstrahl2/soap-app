@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut } from "firebase/auth";
@@ -12,10 +12,13 @@ import {
   BottomNavigation,
   BottomNavigationAction,
   Paper,
+  Chip,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import NoteIcon from "@mui/icons-material/Note";
+
+import { getProfile } from "../firebase/firestoreHelper";
 
 const tabRoutes = ["/dashboard", "/new-note", "/my-notes"];
 
@@ -26,13 +29,26 @@ export default function Layout() {
     location.pathname.startsWith(r)
   );
   const [tabVal, setTabVal] = React.useState(currentIdx >= 0 ? currentIdx : 0);
+  const [plan, setPlan] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const idx = tabRoutes.findIndex((r) =>
       location.pathname.startsWith(r)
     );
     if (idx >= 0 && idx !== tabVal) setTabVal(idx);
   }, [location.pathname]);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const profile = await getProfile();
+        setPlan(profile?.plan || "free");
+      } catch (err) {
+        console.error("Failed to load profile in Layout:", err);
+      }
+    }
+    loadProfile();
+  }, []);
 
   const handleTab = (_, newVal) => {
     setTabVal(newVal);
@@ -60,7 +76,16 @@ export default function Layout() {
           <Typography variant="h5" component="h1" sx={{ userSelect: "none" }}>
             SOAP App
           </Typography>
-          <Box>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            {plan && (
+              <Chip
+                label={plan.toUpperCase()}
+                size="small"
+                color="secondary"
+                sx={{ mr: 2 }}
+                aria-label={`Current subscription plan: ${plan}`}
+              />
+            )}
             <Link
               component={NavLink}
               to="/my-account"

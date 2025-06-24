@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -19,6 +18,9 @@ import MyAccount from "./pages/MyAccount";
 import EditNote from "./pages/EditNote";
 import NoteDetail from "./pages/NoteDetail";
 import AdminPanel from "./pages/AdminPanel";
+import UpgradePlan from "./pages/UpgradePlan";
+import UpgradeSuccess from "./pages/UpgradeSuccess";
+import UpgradeCancelled from "./pages/UpgradeCancelled";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import RequireProfileComplete from "./components/RequireProfileComplete";
@@ -188,6 +190,38 @@ export default function App() {
                   <AdminPanel />
                 </ErrorBoundary>
               </RequireAdmin>
+            </RequireAuth>
+          }
+        />
+
+        {/* ✅ Stripe-related plan routes */}
+        <Route
+          path="upgrade"
+          element={
+            <RequireAuth user={user}>
+              <ErrorBoundary>
+                <UpgradePlan />
+              </ErrorBoundary>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="upgrade-success"
+          element={
+            <RequireAuth user={user}>
+              <ErrorBoundary>
+                <UpgradeSuccess />
+              </ErrorBoundary>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="upgrade-cancelled"
+          element={
+            <RequireAuth user={user}>
+              <ErrorBoundary>
+                <UpgradeCancelled />
+              </ErrorBoundary>
             </RequireAuth>
           }
         />

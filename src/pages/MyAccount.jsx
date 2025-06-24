@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -8,7 +8,10 @@ import {
   Button,
   Divider,
   Link,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
+import { getProfile, saveUserProfile } from "../firebase/firestoreHelper";
 
 const plans = [
   {
@@ -35,8 +38,8 @@ const plans = [
     ],
   },
   {
-    name: "team",
-    displayName: "Team",
+    name: "group",
+    displayName: "Group",
     price: "$25/mo",
     description: "For small practices",
     features: [
@@ -53,17 +56,91 @@ const allFeatures = Array.from(
 );
 
 export default function MyAccount() {
-  const handleChoosePlan = (planName) => {
-    alert(`You chose the ${planName} plan. (Upgrade logic coming soon!)`);
+  const [currentPlan, setCurrentPlan] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    async function fetchCurrentPlan() {
+      try {
+        const profile = await getProfile();
+        setCurrentPlan(profile?.plan || "free");
+      } catch (err) {
+        console.error("Failed to fetch user profile", err);
+        setErrorMsg("Failed to load your current plan.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCurrentPlan();
+  }, []);
+
+  const handleChoosePlan = async (planName) => {
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    if (planName === currentPlan) return;
+
+    // For free plan, update immediately
+    if (planName === "free") {
+      setUpdating(true);
+      try {
+        await updateUserProfile({ plan: planName });
+        setCurrentPlan(planName);
+        setSuccessMsg("Plan updated successfully!");
+      } catch (err) {
+        console.error("Failed to update plan", err);
+        setErrorMsg("Failed to update plan. Please try again.");
+      } finally {
+        setUpdating(false);
+      }
+      return;
+    }
+
+    // For pro or group, navigate to /upgrade for Stripe checkout flow
+    window.location.href = "/upgrade";
   };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          bgcolor: "#fff",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       <Typography variant="h4" align="center" gutterBottom>
-        Choose Your Plan
+        My Account
+      </Typography>
+      <Typography align="center" sx={{ mb: 4 }}>
+        Current Plan: <strong>{currentPlan}</strong>
       </Typography>
 
-      <Grid container spacing={4} justifyContent="center" sx={{ mt: 4 }}>
+      {errorMsg && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {errorMsg}
+        </Alert>
+      )}
+      {successMsg && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {successMsg}
+        </Alert>
+      )}
+
+      <Grid container spacing={4} justifyContent="center">
         {plans.map((plan) => (
           <Grid item xs={12} sm={6} md={4} key={plan.name}>
             <Paper
@@ -80,7 +157,7 @@ export default function MyAccount() {
                 height: "100%",
               }}
             >
-              <Typography variant="h6" gutterBottom align="center">
+              <Typography variant="h6" align="center" gutterBottom>
                 {plan.displayName}
               </Typography>
               <Typography
@@ -117,16 +194,22 @@ export default function MyAccount() {
                 sx={{ mt: 3 }}
                 onClick={() => handleChoosePlan(plan.name)}
                 aria-label={`Choose the ${plan.displayName} plan`}
+                disabled={plan.name === currentPlan || updating}
               >
-                Choose {plan.displayName}
+                {plan.name === currentPlan
+                  ? "Current Plan"
+                  : updating
+                  ? "Updating..."
+                  : `Choose ${plan.displayName}`}
               </Button>
             </Paper>
           </Grid>
         ))}
       </Grid>
 
-      {/* Legal Links Section */}
       <Divider sx={{ my: 5 }} />
+
+      {/* Legal & Policy Links */}
       <Box textAlign="center">
         <Typography variant="subtitle1" gutterBottom>
           Legal & Policy Documents
