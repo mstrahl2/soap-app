@@ -160,3 +160,4 @@ export async function getUserFreeNotesRemaining() {
 
 // Alias for backward compatibility or semantic clarity
 export { saveUserProfile as createUserProfile };
+export { saveUserProfile as updateUserProfile };
