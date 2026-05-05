@@ -14,19 +14,20 @@ import MyNotes from "./pages/MyNotes";
 import NewNote from "./pages/NewNote";
 import ProfileUpdate from "./pages/ProfileUpdate";
 import Profile from "./pages/Profile";
-import MyAccount from "./pages/MyAccount";
+import AccountSettings from "./pages/AccountSettings";
 import EditNote from "./pages/EditNote";
 import NoteDetail from "./pages/NoteDetail";
 import AdminPanel from "./pages/AdminPanel";
 import UpgradePlan from "./pages/UpgradePlan";
 import UpgradeSuccess from "./pages/UpgradeSuccess";
 import UpgradeCancelled from "./pages/UpgradeCancelled";
+import CancelSubscription from "./pages/CancelSubscription"; // ✅ New import
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import RequireProfileComplete from "./components/RequireProfileComplete";
 
-// ✅ New legal pages
-import PrivacyPolicy from "./pages/PrivacyPolicy";
+// Legal pages
+import PrivacyPolicy from "./pages/PolicyPage";
 import TermsOfService from "./pages/TermsOfService";
 import Disclaimer from "./pages/Disclaimer";
 
@@ -92,8 +93,6 @@ export default function App() {
           path="signup"
           element={!user ? <Signup /> : <Navigate to="/dashboard" replace />}
         />
-
-        {/* ✅ Legal public routes */}
         <Route path="privacy-policy" element={<PrivacyPolicy />} />
         <Route path="terms-of-service" element={<TermsOfService />} />
         <Route path="disclaimer" element={<Disclaimer />} />
@@ -176,7 +175,17 @@ export default function App() {
           element={
             <RequireAuth user={user}>
               <ErrorBoundary>
-                <MyAccount />
+                <AccountSettings />
+              </ErrorBoundary>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="cancel-subscription"
+          element={
+            <RequireAuth user={user}>
+              <ErrorBoundary>
+                <CancelSubscription />
               </ErrorBoundary>
             </RequireAuth>
           }
@@ -193,8 +202,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
-        {/* ✅ Stripe-related plan routes */}
         <Route
           path="upgrade"
           element={
@@ -225,7 +232,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 

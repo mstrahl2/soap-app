@@ -1,61 +1,38 @@
-import React, { useEffect, useState } from "react";
-import { Box, Container, Typography, Button, CircularProgress } from "@mui/material";
+// src/pages/UpgradeSuccess.jsx
+import React from "react";
+import { Box, Container, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { getProfile } from "../firebase/firestoreHelper";
 
 export default function UpgradeSuccess() {
   const navigate = useNavigate();
-  const [plan, setPlan] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchUpdatedPlan() {
-      try {
-        const profile = await getProfile();
-        setPlan(profile?.plan || "free");
-      } catch (err) {
-        console.error("Failed to fetch profile:", err);
-        setPlan("free");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUpdatedPlan();
-  }, []);
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          bgcolor: "#fff",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
+    <Container maxWidth="sm" sx={{ py: 6, textAlign: "center" }}>
       <Typography variant="h4" gutterBottom>
-        🎉 Upgrade Successful!
+        🎉 You're upgraded!
       </Typography>
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        Your plan has been upgraded to: <strong>{plan}</strong>.
+
+      <Typography sx={{ mb: 3 }}>
+        You now have full access to NoteWell AI.
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        Start creating unlimited professional SOAP notes instantly.
       </Typography>
 
       <Button
         variant="contained"
-        onClick={() => navigate("/dashboard")}
-        sx={{ mt: 3 }}
+        size="large"
+        onClick={() => navigate("/new-note")}
       >
-        Go to Dashboard
+        Create Your Next Note
       </Button>
+
+      <Box sx={{ mt: 2 }}>
+        <Button onClick={() => navigate("/dashboard")}>
+          Back to Dashboard
+        </Button>
+      </Box>
     </Container>
   );
 }

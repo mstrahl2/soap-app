@@ -1,3 +1,4 @@
+// src/pages/ProfileUpdate.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase/firebaseConfig";
@@ -13,36 +14,32 @@ import {
   Alert,
   CircularProgress,
   MenuItem,
+  Stack,
 } from "@mui/material";
 
-const occupations = [
-  "Physical Therapist",
-  "Occupational Therapist",
-  "Speech Therapist",
-  "Mental Health Counselor",
+const licenseTypes = [
+  "LCSW",
+  "LMHC",
+  "LMFT",
+  "LPC",
   "Psychologist",
   "Psychiatrist",
-  "Social Worker",
-  "Physician",
-  "Nurse",
-  "Chiropractor",
-  "Massage Therapist",
-  "Behavioral Therapist",
+  "Registered Intern",
+  "Other Mental Health Professional",
 ];
 
 export default function ProfileUpdate() {
   const navigate = useNavigate();
+
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
     preferredName: "",
-    address1: "",
-    address2: "",
-    city: "",
+    practiceName: "",
     state: "",
-    zipCode: "",
-    occupation: "",
+    licenseType: "",
   });
+
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -50,38 +47,68 @@ export default function ProfileUpdate() {
   useEffect(() => {
     async function fetchProfile() {
       if (!auth.currentUser) return;
+
       try {
         const docRef = doc(db, "users", auth.currentUser.uid);
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
-          setProfile((prev) => ({ ...prev, ...docSnap.data() }));
+          setProfile((prev) => ({
+            ...prev,
+            ...docSnap.data(),
+          }));
         }
       } catch (err) {
         console.error("Error fetching profile:", err);
         setError("Failed to load profile.");
       }
+
       setLoading(false);
     }
+
     fetchProfile();
   }, []);
 
   const handleChange = (e) => {
-    setProfile((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setProfile((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
+
+    if (!auth.currentUser) {
+      setError("User not authenticated.");
+      return;
+    }
+
+    if (!profile.firstName || !profile.lastName || !profile.licenseType || !profile.state) {
+      setError("Please complete all required fields.");
+      return;
+    }
+
     try {
-      if (!auth.currentUser) {
-        setError("User not authenticated.");
-        return;
-      }
       const docRef = doc(db, "users", auth.currentUser.uid);
-      await setDoc(docRef, profile, { merge: true });
-      setSuccess("Profile saved successfully!");
-      setTimeout(() => navigate("/dashboard"), 1500); // Redirect to dashboard after save
+
+      await setDoc(
+        docRef,
+        {
+          ...profile,
+          field: "mental-health",
+          profileComplete: true,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      setSuccess("Profile updated successfully!");
+      setTimeout(() => navigate("/dashboard"), 1200);
     } catch (err) {
+      console.error(err);
       setError("Failed to save profile: " + err.message);
     }
   };
@@ -95,20 +122,12 @@ export default function ProfileUpdate() {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "#ffffff",
-        color: "#1a1a1a",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Container maxWidth="sm" sx={{ my: 6, flexGrow: 1 }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#ffffff", color: "#1a1a1a" }}>
+      <Container maxWidth="sm" sx={{ my: 6 }}>
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Update Profile
+              Update Mental Health Profile
             </Typography>
 
             {error && (
@@ -116,6 +135,7 @@ export default function ProfileUpdate() {
                 {error}
               </Alert>
             )}
+
             {success && (
               <Alert severity="success" sx={{ mb: 2 }}>
                 {success}
@@ -123,95 +143,71 @@ export default function ProfileUpdate() {
             )}
 
             <form onSubmit={handleSubmit}>
-              <TextField
-                label="First Name"
-                name="firstName"
-                value={profile.firstName || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Last Name"
-                name="lastName"
-                value={profile.lastName || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Preferred Name"
-                name="preferredName"
-                value={profile.preferredName || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Address 1"
-                name="address1"
-                value={profile.address1 || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Address 2"
-                name="address2"
-                value={profile.address2 || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="City"
-                name="city"
-                value={profile.city || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="State"
-                name="state"
-                value={profile.state || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Zip Code"
-                name="zipCode"
-                value={profile.zipCode || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                select
-                label="Occupation"
-                name="occupation"
-                value={profile.occupation || ""}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              >
-                {occupations.map((occ) => (
-                  <MenuItem key={occ} value={occ}>
-                    {occ}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Stack spacing={2}>
+                <TextField
+                  label="First Name"
+                  name="firstName"
+                  value={profile.firstName || ""}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                />
 
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-                sx={{ mt: 3 }}
-              >
-                Save Updates
-              </Button>
+                <TextField
+                  label="Last Name"
+                  name="lastName"
+                  value={profile.lastName || ""}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                />
+
+                <TextField
+                  label="Preferred Name"
+                  name="preferredName"
+                  value={profile.preferredName || ""}
+                  onChange={handleChange}
+                  fullWidth
+                />
+
+                <TextField
+                  label="Practice Name"
+                  name="practiceName"
+                  value={profile.practiceName || ""}
+                  onChange={handleChange}
+                  fullWidth
+                />
+
+                <TextField
+                  select
+                  label="License Type"
+                  name="licenseType"
+                  value={profile.licenseType || ""}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                >
+                  {licenseTypes.map((license) => (
+                    <MenuItem key={license} value={license}>
+                      {license}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  label="State"
+                  name="state"
+                  value={profile.state || ""}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  placeholder="Example: FL"
+                />
+
+                <Button type="submit" variant="contained" fullWidth>
+                  Save Updates
+                </Button>
+              </Stack>
             </form>
           </CardContent>
         </Card>

@@ -4,17 +4,15 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDPWexadPG6Nv5pcrM9W22rpS5Ji_2yukc",
-  authDomain: "soap-app-39cca.firebaseapp.com",
-  projectId: "soap-app-39cca",
-  storageBucket: "soap-app-39cca.appspot.com",
-  messagingSenderId: "658479056410",
-  appId: "1:658479056410:web:93eb5dc61871fe4509f3a3"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 

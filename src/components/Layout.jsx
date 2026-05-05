@@ -17,7 +17,6 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import NoteIcon from "@mui/icons-material/Note";
-
 import { getProfile } from "../firebase/firestoreHelper";
 
 const tabRoutes = ["/dashboard", "/new-note", "/my-notes"];
@@ -25,28 +24,34 @@ const tabRoutes = ["/dashboard", "/new-note", "/my-notes"];
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentIdx = tabRoutes.findIndex((r) =>
-    location.pathname.startsWith(r)
+
+  const currentIdx = tabRoutes.findIndex((route) =>
+    location.pathname.startsWith(route)
   );
-  const [tabVal, setTabVal] = React.useState(currentIdx >= 0 ? currentIdx : 0);
-  const [plan, setPlan] = useState(null);
+
+  const [tabVal, setTabVal] = useState(currentIdx >= 0 ? currentIdx : 0);
+  const [tier, setTier] = useState("free");
 
   useEffect(() => {
-    const idx = tabRoutes.findIndex((r) =>
-      location.pathname.startsWith(r)
+    const idx = tabRoutes.findIndex((route) =>
+      location.pathname.startsWith(route)
     );
-    if (idx >= 0 && idx !== tabVal) setTabVal(idx);
-  }, [location.pathname]);
+
+    if (idx >= 0 && idx !== tabVal) {
+      setTabVal(idx);
+    }
+  }, [location.pathname, tabVal]);
 
   useEffect(() => {
     async function loadProfile() {
       try {
         const profile = await getProfile();
-        setPlan(profile?.plan || "free");
+        setTier(profile?.tier || profile?.subscriptionTier || "free");
       } catch (err) {
         console.error("Failed to load profile in Layout:", err);
       }
     }
+
     loadProfile();
   }, []);
 
@@ -64,37 +69,39 @@ export default function Layout() {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "#ffffff",
-        flexDirection: "column",
+        bgcolor: "#f7f8fa",
         display: "flex",
-        pb: "56px", // reserve space for fixed bottom nav + footer container
+        flexDirection: "column",
+        pb: "86px",
       }}
     >
-      {/* Top App Bar */}
-      <AppBar position="static" sx={{ bgcolor: "#1976d2" }}>
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Typography variant="h5" component="h1" sx={{ userSelect: "none" }}>
-            SOAP App
+      <AppBar position="static" sx={{ bgcolor: "#111827" }} elevation={1}>
+        <Toolbar sx={{ justifyContent: "space-between", gap: 2 }}>
+          <Typography
+            variant="h6"
+            component="h1"
+            sx={{ userSelect: "none", fontWeight: 700 }}
+          >
+            NoteWell AI
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            {plan && (
-              <Chip
-                label={plan.toUpperCase()}
-                size="small"
-                color="secondary"
-                sx={{ mr: 2 }}
-                aria-label={`Current subscription plan: ${plan}`}
-              />
-            )}
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Chip
+              label={tier.toUpperCase()}
+              size="small"
+              color={tier === "free" ? "default" : "success"}
+            />
+
             <Link
               component={NavLink}
               to="/my-account"
               color="inherit"
               underline="none"
-              sx={{ mr: 2 }}
+              sx={{ display: { xs: "none", sm: "inline" } }}
             >
-              My Account
+              Account
             </Link>
+
             <Button variant="outlined" color="inherit" onClick={handleLogout}>
               Logout
             </Button>
@@ -102,12 +109,10 @@ export default function Layout() {
         </Toolbar>
       </AppBar>
 
-      {/* Main Content */}
-      <Box sx={{ flex: 1, p: 3, overflowY: "auto" }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3 }, overflowY: "auto" }}>
         <Outlet />
       </Box>
 
-      {/* Combined Fixed Bottom Nav + Footer */}
       <Paper
         sx={{
           position: "fixed",
@@ -115,12 +120,8 @@ export default function Layout() {
           left: 0,
           right: 0,
           bgcolor: "#fff",
-          borderTop: "1px solid #ddd",
+          borderTop: "1px solid #e5e7eb",
           zIndex: (theme) => theme.zIndex.appBar,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          py: 0,
         }}
         elevation={8}
       >
@@ -132,23 +133,29 @@ export default function Layout() {
 
         <Box
           sx={{
-            fontSize: "0.75rem",
+            fontSize: "0.72rem",
             color: "text.secondary",
-            py: 0.5,
+            py: 0.6,
             px: 2,
             width: "100%",
             textAlign: "center",
-            borderTop: "1px solid #ddd",
-            userSelect: "none",
+            borderTop: "1px solid #e5e7eb",
           }}
         >
-          &copy; {new Date().getFullYear()} SOAP App. All rights reserved. &nbsp;|&nbsp;
+          © {new Date().getFullYear()} NoteWell AI. Clinician review required.
+          &nbsp;|&nbsp;
+          <Link component={NavLink} to="/dashboard" underline="hover">
+            Dashboard
+          </Link>
+          &nbsp;|&nbsp;
           <Link component={NavLink} to="/privacy-policy" underline="hover">
-            Privacy Policy
-          </Link> &nbsp;|&nbsp;
+            Privacy
+          </Link>
+          &nbsp;|&nbsp;
           <Link component={NavLink} to="/terms-of-service" underline="hover">
-            Terms of Service
-          </Link> &nbsp;|&nbsp;
+            Terms
+          </Link>
+          &nbsp;|&nbsp;
           <Link component={NavLink} to="/disclaimer" underline="hover">
             Disclaimer
           </Link>

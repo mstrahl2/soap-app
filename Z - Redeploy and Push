@@ -1,0 +1,39 @@
+Push & Deploy Cheat Sheet for Vercel
+
+   git add .
+
+   git commit -m "Your commit message describing changes"
+
+  
+   git push origin main
+
+   vercel --prod
+
+
+
+
+
+
+
+
+   - Watch terminal logs.
+   - If build fails (exit code 1), check logs:
+     vercel logs your-project-url
+   - Or visit Vercel dashboard > Project > Deployments > Logs
+
+
+
+6. Quick Vercel commands
+   ----------------------
+   - View deployment logs:
+     vercel logs your-project-url
+
+   - List your deployments:
+     vercel list
+
+   - Deploy without prompt:
+     vercel --prod --confirm
+
+7Optional: Setup GitHub Actions or Vercel auto-deploy on push for full automation.
+
+-----------------------------------

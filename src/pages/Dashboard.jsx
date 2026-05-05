@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import {
   Typography,
@@ -6,15 +7,23 @@ import {
   CardContent,
   Button,
   CircularProgress,
+  Stack,
+  Alert,
 } from "@mui/material";
-import { getProfile, getUserFreeNotesRemaining } from "../firebase/firestoreHelper";
+import {
+  getProfile,
+  getUserFreeNotesRemaining,
+  hasActiveSubscription,
+} from "../firebase/firestoreHelper";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebaseConfig";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [remainingNotes, setRemainingNotes] = useState(null);
+  const [hasSub, setHasSub] = useState(false);
   const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +34,13 @@ export default function Dashboard() {
             const userProfile = await getProfile();
             setProfile(userProfile);
 
-            if (userProfile.subscriptionTier === "free") {
+            const tier =
+              userProfile?.tier || "free";
+
+            const sub = await hasActiveSubscription();
+            setHasSub(sub);
+
+            if (tier === "free" && !sub) {
               const remaining = await getUserFreeNotesRemaining();
               setRemainingNotes(remaining);
             } else {
@@ -45,9 +60,8 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  const handleUpgrade = () => {
-    navigate("/my-account");
-  };
+  const handleUpgrade = () => navigate("/upgrade-plan");
+  const handleNewNote = () => navigate("/new-note");
 
   if (loading) {
     return (
@@ -58,61 +72,71 @@ export default function Dashboard() {
   }
 
   const displayName = profile?.preferredName || profile?.firstName || "User";
-  const occupation = profile?.occupation || "Not set";
-  const subscriptionTier = profile?.subscriptionTier || "free";
+  const licenseType = profile?.licenseType || "Not set";
+  const tier = profile?.tier || "free";
 
   return (
-    <Box maxWidth={600} mx="auto" mt={4}>
+    <Box maxWidth={700} mx="auto" mt={4}>
       <Typography variant="h4" gutterBottom>
         Welcome, {displayName}.
       </Typography>
+
       <Typography variant="body1" gutterBottom>
-        Occupation: {occupation}
+        License: {licenseType}
       </Typography>
 
+      {/* TRUST BOX */}
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Notes generated are assistive drafts. Always review and finalize before clinical use.
+      </Alert>
+
+      {/* PLAN CARD */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6">Your Plan:</Typography>
-          <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-            {subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)}
+          <Typography variant="h6">Your Plan</Typography>
+
+          <Typography variant="h5" sx={{ fontWeight: "bold", mb: 1 }}>
+            {tier.charAt(0).toUpperCase() + tier.slice(1)}
           </Typography>
 
-          {subscriptionTier === "free" ? (
+          {tier === "free" && !hasSub ? (
             <>
-              <Typography variant="body2" color="text.secondary" mt={1}>
-                You have <strong>{remainingNotes}</strong> of 15 free notes remaining.
+              <Typography variant="body2">
+                {remainingNotes} of 15 notes remaining this month
               </Typography>
 
-              {typeof remainingNotes === "number" && remainingNotes <= 3 && (
+              {remainingNotes <= 3 && (
                 <Typography color="error" mt={1}>
-                  You're almost out of free notes! Upgrade your plan to continue uninterrupted.
+                  You're almost out of notes.
                 </Typography>
               )}
 
               <Button
                 variant="contained"
-                color="primary"
                 sx={{ mt: 2 }}
                 onClick={handleUpgrade}
               >
-                View Plans
+                Upgrade Plan
               </Button>
             </>
           ) : (
-            <Typography variant="body2" color="text.secondary" mt={1}>
-              You have unlimited notes remaining. 🎉
+            <Typography color="text.secondary">
+              Unlimited note access active
             </Typography>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <Typography variant="body1">
-            Use the tabs below to create a new SOAP note, view your notes, or update your profile.
-          </Typography>
-        </CardContent>
-      </Card>
+      {/* ACTIONS */}
+      <Stack spacing={2}>
+        <Button variant="contained" size="large" onClick={handleNewNote}>
+          Create New Note
+        </Button>
+
+        <Button variant="outlined" onClick={() => navigate("/my-notes")}>
+          View My Notes
+        </Button>
+      </Stack>
     </Box>
   );
 }

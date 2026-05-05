@@ -1,118 +1,120 @@
 // src/pages/Login.jsx
 import React, { useState } from "react";
 import {
-  AppBar,
-  Toolbar,
   Typography,
   Box,
   Button,
-  Card,
-  CardContent,
-  Container,
   TextField,
   Link,
   Alert,
   Divider,
+  Stack,
 } from "@mui/material";
-import { useNavigate, NavLink } from "react-router-dom";
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 
 export default function Login() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
+      setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to log in.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setError("");
-    const provider = new GoogleAuthProvider();
+
     try {
+      setLoading(true);
+      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to sign in with Google.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "#fff" }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div">
-            SOAP App
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <Box>
+      <Typography variant="h5" gutterBottom>
+        Welcome back
+      </Typography>
 
-      <Container maxWidth="sm" sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-        <Card sx={{ width: "100%" }}>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Welcome back
-            </Typography>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            <Box component="form" onSubmit={handleLogin} noValidate>
-              <TextField
-                label="Email"
-                fullWidth
-                type="email"
-                margin="normal"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <TextField
-                label="Password"
-                fullWidth
-                type="password"
-                margin="normal"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
-                Log In
-              </Button>
-            </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Log in to continue drafting mental health documentation with NoteWell AI.
+      </Typography>
 
-            <Divider sx={{ my: 3 }}>OR</Divider>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-            <Button
-              variant="outlined"
-              fullWidth
-              onClick={handleGoogleSignIn}
-            >
-              Sign in with Google
-            </Button>
+      <Box component="form" onSubmit={handleLogin} noValidate>
+        <Stack spacing={2}>
+          <TextField
+            label="Email"
+            fullWidth
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-            <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
-              Don't have an account?{" "}
-              <Link component={NavLink} to="/signup">
-                Sign Up
-              </Link>
-            </Typography>
-          </CardContent>
-        </Card>
-      </Container>
+          <TextField
+            label="Password"
+            fullWidth
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-      <Box component="footer" sx={{ py: 2, textAlign: "center", bgcolor: "#f0f0f0", mt: "auto" }}>
-        <Typography variant="body2">© {new Date().getFullYear()} SOAP App</Typography>
+          <Button type="submit" variant="contained" fullWidth disabled={loading}>
+            {loading ? "Logging in..." : "Log In"}
+          </Button>
+        </Stack>
       </Box>
+
+      <Divider sx={{ my: 3 }}>OR</Divider>
+
+      <Button
+        variant="outlined"
+        fullWidth
+        onClick={handleGoogleSignIn}
+        disabled={loading}
+      >
+        Sign in with Google
+      </Button>
+
+      <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+        Don&apos;t have an account?{" "}
+        <Link component={RouterLink} to="/signup">
+          Sign Up
+        </Link>
+      </Typography>
     </Box>
   );
 }

@@ -1,73 +1,70 @@
 // src/pages/MyNotes.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  IconButton,
   Button,
-  Alert,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Stack,
-  CircularProgress,
   TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
+  MenuItem,
+  Chip,
+  Alert,
+  CircularProgress,
+  Divider,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import DownloadIcon from "@mui/icons-material/Download";
 import { useNavigate } from "react-router-dom";
-import {
-  getNotes,
-  deleteNote,
-  getProfile,
-  getUserFreeNotesRemaining,
-} from "../firebase/firestoreHelper";
+import { getNotes, deleteNote } from "../firebase/firestoreHelper";
 
-const PAGE_SIZE = 10;
+const noteTypeLabels = {
+  intake: "Intake",
+  standard: "SOAP Session",
+  progress: "Progress",
+  crisis: "Crisis / Risk",
+  discharge: "Discharge",
+};
+
+function getCleanNoteText(text) {
+  if (!text) return "";
+
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/__/g, "")
+    .replace(/#{1,6}\s?/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function getPreview(text) {
+  if (!text) return "No formatted note available.";
+  return text.length > 180 ? text.substring(0, 180) + "..." : text;
+}
 
 export default function MyNotes() {
-  const [notes, setNotes] = useState([]);
-  const [filteredNotes, setFilteredNotes] = useState([]);
-  const [selectedType, setSelectedType] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
-  const [profile, setProfile] = useState(null);
-  const [remaining, setRemaining] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filteredNotes.length / PAGE_SIZE);
-
   const navigate = useNavigate();
 
+  const [notes, setNotes] = useState([]);
+  const [filteredNotes, setFilteredNotes] = useState([]);
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [viewMode, setViewMode] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
   const fetchNotes = async () => {
-    setLoading(true);
-    setError("");
     try {
-      const prof = await getProfile();
-      setProfile(prof);
+      setLoading(true);
+      setError("");
 
-      const userNotes = await getNotes();
-      setNotes(userNotes);
-      applyFiltersAndSort(userNotes, selectedType, searchQuery, sortBy);
-
-      if (prof.subscriptionTier === "free") {
-        const count = await getUserFreeNotesRemaining();
-        setRemaining(count);
-      }
+      const data = await getNotes();
+      setNotes(data);
+      setFilteredNotes(data);
     } catch (err) {
       console.error(err);
       setError("Failed to load notes.");
@@ -76,123 +73,193 @@ export default function MyNotes() {
     }
   };
 
+  const clientNames = useMemo(() => {
+    const names = notes
+      .map((note) => note.clientName?.trim())
+      .filter(Boolean);
+
+    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+  }, [notes]);
+
   useEffect(() => {
-    fetchNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let updated = [...notes];
 
-  // Apply filtering and sorting
-  const applyFiltersAndSort = (allNotes, typeFilter, query, sortOption) => {
-    let filtered = [...allNotes];
-
-    if (typeFilter !== "all") {
-      filtered = filtered.filter((note) => note.noteType === typeFilter);
+    if (filterType !== "all") {
+      updated = updated.filter((note) => note.noteType === filterType);
     }
 
-    if (query.trim() !== "") {
-      const q = query.toLowerCase();
-      filtered = filtered.filter(
+    if (clientFilter !== "all") {
+      updated = updated.filter((note) => note.clientName === clientFilter);
+    }
+
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+
+      updated = updated.filter(
         (note) =>
-          (note.title || "").toLowerCase().includes(q) ||
-          (note.formattedNote || "").toLowerCase().includes(q) ||
-          (note.noteType || "").toLowerCase().includes(q)
+          note.title?.toLowerCase().includes(searchLower) ||
+          note.clientName?.toLowerCase().includes(searchLower) ||
+          note.formattedNote?.toLowerCase().includes(searchLower) ||
+          note.rawNote?.toLowerCase().includes(searchLower)
       );
     }
 
-    // Sorting
-    if (sortOption === "newest") {
-      filtered.sort((a, b) => {
-        const aTime = a.createdAt
-          ? a.createdAt.toDate
-            ? a.createdAt.toDate().getTime()
-            : new Date(a.createdAt).getTime()
-          : 0;
-        const bTime = b.createdAt
-          ? b.createdAt.toDate
-            ? b.createdAt.toDate().getTime()
-            : new Date(b.createdAt).getTime()
-          : 0;
-        return bTime - aTime;
-      });
-    } else if (sortOption === "oldest") {
-      filtered.sort((a, b) => {
-        const aTime = a.createdAt
-          ? a.createdAt.toDate
-            ? a.createdAt.toDate().getTime()
-            : new Date(a.createdAt).getTime()
-          : 0;
-        const bTime = b.createdAt
-          ? b.createdAt.toDate
-            ? b.createdAt.toDate().getTime()
-            : new Date(b.createdAt).getTime()
-          : 0;
-        return aTime - bTime;
-      });
-    } else if (sortOption === "title-asc") {
-      filtered.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-    } else if (sortOption === "title-desc") {
-      filtered.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
-    }
+    setFilteredNotes(updated);
+  }, [search, filterType, clientFilter, notes]);
 
-    setFilteredNotes(filtered);
-    setCurrentPage(1); // reset to first page on filter/sort/search change
-  };
+  const groupedByClient = useMemo(() => {
+    const grouped = {};
 
-  const handleFilterChange = (e) => {
-    const value = e.target.value;
-    setSelectedType(value);
-    applyFiltersAndSort(notes, value, searchQuery, sortBy);
-  };
+    filteredNotes.forEach((note) => {
+      const client = note.clientName?.trim() || "No Client Name";
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    applyFiltersAndSort(notes, selectedType, value, sortBy);
-  };
+      if (!grouped[client]) {
+        grouped[client] = [];
+      }
 
-  const handleSortChange = (e) => {
-    const value = e.target.value;
-    setSortBy(value);
-    applyFiltersAndSort(notes, selectedType, searchQuery, value);
-  };
+      grouped[client].push(note);
+    });
 
-  const handleDelete = async () => {
-    if (!confirmDeleteId) return;
-    setDeleteLoadingId(confirmDeleteId);
-    setError("");
+    return grouped;
+  }, [filteredNotes]);
+
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this note?"
+    );
+
+    if (!confirmed) return;
+
     try {
-      await deleteNote(confirmDeleteId);
-      setConfirmDeleteId(null);
+      await deleteNote(id);
       fetchNotes();
     } catch (err) {
       console.error(err);
       setError("Failed to delete note.");
-    } finally {
-      setDeleteLoadingId(null);
     }
   };
 
-  const handleExport = (note) => {
-    const blob = new Blob([note.formattedNote || ""], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${note.title || "note"}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text || "");
+      alert("Copied to clipboard");
+    } catch (err) {
+      alert("Unable to copy note.");
+    }
   };
 
-  // Pagination slice for current page
-  const paginatedNotes = filteredNotes.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+  const handleCopyClean = async (text) => {
+    try {
+      await navigator.clipboard.writeText(getCleanNoteText(text || ""));
+      alert("Clean note copied");
+    } catch (err) {
+      alert("Unable to copy clean note.");
+    }
+  };
+
+  const renderNoteCard = (note) => (
+    <Card key={note.id}>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            spacing={1}
+          >
+            <Typography variant="h6">
+              {note.title || "Untitled Note"}
+            </Typography>
+
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Chip
+                label={noteTypeLabels[note.noteType] || note.noteType || "N/A"}
+                size="small"
+              />
+
+              {note.auditSafe && (
+                <Chip
+                  label="Audit-Safe"
+                  color="success"
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+
+              {note.clientName && (
+                <Chip label={`Client: ${note.clientName}`} size="small" />
+              )}
+
+              {note.sessionDate && (
+                <Chip label={`Date: ${note.sessionDate}`} size="small" />
+              )}
+            </Stack>
+          </Stack>
+
+          <Typography variant="body2" color="text.secondary">
+            {getPreview(note.formattedNote)}
+          </Typography>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => navigate(`/note-detail/${note.id}`)}
+            >
+              View
+            </Button>
+
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => navigate(`/edit-note/${note.id}`)}
+            >
+              Edit
+            </Button>
+
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleCopy(note.formattedNote)}
+            >
+              Copy
+            </Button>
+
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleCopyClean(note.formattedNote)}
+            >
+              Copy Clean
+            </Button>
+
+            <Button
+              size="small"
+              color="error"
+              variant="outlined"
+              onClick={() => handleDelete(note.id)}
+            >
+              Delete
+            </Button>
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        My Notes
-      </Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
+        <Typography variant="h4">My Notes</Typography>
+
+        <Button variant="contained" onClick={() => navigate("/new-note")}>
+          New Note
+        </Button>
+      </Stack>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -200,150 +267,91 @@ export default function MyNotes() {
         </Alert>
       )}
 
-      {profile?.subscriptionTier === "free" && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          {remaining !== null
-            ? `You have ${remaining} free notes remaining out of 15.`
-            : "Checking note limit..."}
-        </Alert>
-      )}
-
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={{ mb: 3 }}
-        alignItems="center"
-      >
-        <FormControl sx={{ minWidth: 150 }}>
-          <InputLabel>Filter by Type</InputLabel>
-          <Select value={selectedType} label="Filter by Type" onChange={handleFilterChange}>
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="session">Session</MenuItem>
-            <MenuItem value="progress">Progress</MenuItem>
-            <MenuItem value="discharge">Discharge</MenuItem>
-          </Select>
-        </FormControl>
-
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2}>
         <TextField
-          label="Search Notes"
-          variant="outlined"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          sx={{ flexGrow: 1 }}
+          label="Search Notes or Client"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          fullWidth
         />
 
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel>Sort By</InputLabel>
-          <Select value={sortBy} label="Sort By" onChange={handleSortChange}>
-            <MenuItem value="newest">Date: Newest First</MenuItem>
-            <MenuItem value="oldest">Date: Oldest First</MenuItem>
-            <MenuItem value="title-asc">Title: A - Z</MenuItem>
-            <MenuItem value="title-desc">Title: Z - A</MenuItem>
-          </Select>
-        </FormControl>
+        <TextField
+          select
+          label="Note Type"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="all">All Types</MenuItem>
+          <MenuItem value="intake">Intake</MenuItem>
+          <MenuItem value="standard">SOAP Session</MenuItem>
+          <MenuItem value="progress">Progress</MenuItem>
+          <MenuItem value="crisis">Crisis / Risk</MenuItem>
+          <MenuItem value="discharge">Discharge</MenuItem>
+        </TextField>
+      </Stack>
+
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={3}>
+        <TextField
+          select
+          label="Client History"
+          value={clientFilter}
+          onChange={(e) => setClientFilter(e.target.value)}
+          sx={{ minWidth: 260 }}
+        >
+          <MenuItem value="all">All Clients</MenuItem>
+          {clientNames.map((client) => (
+            <MenuItem key={client} value={client}>
+              {client}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          label="View"
+          value={viewMode}
+          onChange={(e) => setViewMode(e.target.value)}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="all">All Notes</MenuItem>
+          <MenuItem value="client">Group by Client</MenuItem>
+        </TextField>
       </Stack>
 
       {loading ? (
         <CircularProgress />
-      ) : paginatedNotes.length === 0 ? (
-        <Typography>No notes found.</Typography>
-      ) : (
-        <Stack spacing={2}>
-          {paginatedNotes.map((note) => (
-            <Card key={note.id} variant="outlined">
-              <CardContent>
-                <Typography variant="h6">{note.title || "Untitled"}</Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                  Type: {note.noteType}
+      ) : filteredNotes.length === 0 ? (
+        <Typography color="text.secondary">No notes found.</Typography>
+      ) : viewMode === "client" ? (
+        <Stack spacing={3}>
+          {Object.entries(groupedByClient).map(([client, clientNotes]) => (
+            <Box key={client}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                justifyContent="space-between"
+                spacing={1}
+                sx={{ mb: 1 }}
+              >
+                <Typography variant="h6">{client}</Typography>
+                <Typography color="text.secondary">
+                  {clientNotes.length} note{clientNotes.length === 1 ? "" : "s"}
                 </Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mb: 2 }}>
-                  {typeof note.formattedNote === "string" && note.formattedNote.length > 200
-                    ? `${note.formattedNote.slice(0, 200)}...`
-                    : note.formattedNote || ""}
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => navigate(`/note-detail/${note.id}`)}
-                  >
-                    View
-                  </Button>
-                  <IconButton
-                    onClick={() => navigate(`/edit-note/${note.id}`)}
-                    aria-label="edit"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => setConfirmDeleteId(note.id)}
-                    aria-label="delete"
-                    disabled={deleteLoadingId === note.id}
-                  >
-                    {deleteLoadingId === note.id ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      <DeleteIcon />
-                    )}
-                  </IconButton>
-                  <IconButton onClick={() => handleExport(note)} aria-label="export">
-                    <DownloadIcon />
-                  </IconButton>
-                </Stack>
-              </CardContent>
-            </Card>
+              </Stack>
+
+              <Divider sx={{ mb: 2 }} />
+
+              <Stack spacing={2}>
+                {clientNotes.map((note) => renderNoteCard(note))}
+              </Stack>
+            </Box>
           ))}
         </Stack>
-      )}
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Typography sx={{ alignSelf: "center" }}>
-            Page {currentPage} of {totalPages}
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
+      ) : (
+        <Stack spacing={2}>
+          {filteredNotes.map((note) => renderNoteCard(note))}
         </Stack>
       )}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!confirmDeleteId}
-        onClose={() => setConfirmDeleteId(null)}
-        aria-labelledby="confirm-delete-title"
-      >
-        <DialogTitle id="confirm-delete-title">Confirm Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this note? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDeleteId(null)} disabled={!!deleteLoadingId}>
-            Cancel
-          </Button>
-          <Button
-            color="error"
-            onClick={handleDelete}
-            disabled={!!deleteLoadingId}
-            autoFocus
-          >
-            {deleteLoadingId ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

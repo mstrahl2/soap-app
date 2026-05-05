@@ -1,169 +1,180 @@
+// src/pages/UpgradePlan.jsx
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase/firebaseConfig";
 import {
-  Box,
   Container,
   Typography,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
+  Card,
+  CardContent,
   Button,
+  Grid,
   CircularProgress,
+  Chip,
+  Box,
   Alert,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { getProfile, updateUserProfile } from "../firebase/firestoreHelper";
-import { getAuth } from "firebase/auth"; // ✅ Import auth for token
+import {
+  getProfile,
+  hasActiveSubscription,
+} from "../firebase/firestoreHelper";
 
 export default function UpgradePlan() {
-  const navigate = useNavigate();
-  const [selectedPlan, setSelectedPlan] = useState("free");
-  const [currentPlan, setCurrentPlan] = useState("free");
+  const [profile, setProfile] = useState(null);
+  const [hasSub, setHasSub] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [processing, setProcessing] = useState(false);
 
-  // Load user profile on mount to get current plan
+  const navigate = useNavigate();
+
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const profile = await getProfile();
-        const plan = profile?.plan || "free";
-        setCurrentPlan(plan);
-        setSelectedPlan(plan);
-      } catch (err) {
-        console.error("Failed to load profile", err);
-        setErrorMsg("Failed to load your subscription plan.");
-      } finally {
-        setLoading(false);
-      }
+    async function fetchData() {
+      const p = await getProfile();
+      const sub = await hasActiveSubscription();
+
+      setProfile(p);
+      setHasSub(sub);
+      setLoading(false);
     }
-    loadProfile();
+
+    fetchData();
   }, []);
 
-  // Map plan keys to Stripe price IDs
-  const priceIdMap = {
-    pro: "price_1RczPNRvfrmnvHuYe5qqGK0F",
-    group: "price_1RczQKRvfrmnvHuYJXkaNLq2",
-  };
-
-  const handleSave = async () => {
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    if (selectedPlan === "free") {
-      setSaving(true);
-      try {
-        await updateUserProfile({ plan: selectedPlan });
-        setCurrentPlan(selectedPlan);
-        setSuccessMsg("Plan updated successfully!");
-      } catch (err) {
-        console.error("Error updating plan:", err);
-        setErrorMsg("Failed to update plan. Please try again.");
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
+  const handleUpgrade = async (plan) => {
+    setProcessing(true);
 
     try {
-      setSaving(true);
+      const token = await auth.currentUser.getIdToken();
 
-      const auth = getAuth();
-      const user = auth.currentUser;
-      const token = await user.getIdToken(); // ✅ Get Firebase ID token
+      const priceMap = {
+        pro: import.meta.env.VITE_STRIPE_PRICE_PRO,
+        unlimited: import.meta.env.VITE_STRIPE_PRICE_UNLIMITED,
+      };
 
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ Send token to backend
         },
-        body: JSON.stringify({ priceId: priceIdMap[selectedPlan] }),
+        body: JSON.stringify({
+          priceId: priceMap[plan],
+          planName: plan,
+        }),
       });
 
       const data = await res.json();
-
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        setErrorMsg("Failed to start checkout. Please try again.");
-        setSaving(false);
-      }
+      window.location.href = data.url;
     } catch (err) {
-      console.error("Checkout error:", err);
-      setErrorMsg("An error occurred during checkout. Please try again.");
-      setSaving(false);
+      console.error(err);
+      alert("Upgrade failed");
     }
+
+    setProcessing(false);
   };
 
-  if (loading) {
+  if (loading) return <CircularProgress />;
+
+  const tier = profile?.tier || "free";
+  const override = profile?.accessOverride;
+
+  // 🔥 FULL ACCESS (tester / comped / paid)
+  if (override === "tester" || override === "comped" || hasSub) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          bgcolor: "#fff",
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <Container sx={{ py: 5 }}>
+        <Typography variant="h4" gutterBottom>
+          You're all set
+        </Typography>
+
+        <Alert severity="success" sx={{ mb: 3 }}>
+          You already have full access to NoteWell AI.
+        </Alert>
+
+        <Button variant="contained" onClick={() => navigate("/dashboard")}>
+          Back to Dashboard
+        </Button>
+      </Container>
     );
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container sx={{ py: 5 }}>
+      <Typography variant="h4" align="center" gutterBottom>
         Upgrade Your Plan
       </Typography>
 
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        Current Plan: <strong>{currentPlan}</strong>
+      <Typography align="center" color="text.secondary" mb={4}>
+        Save hours of documentation every week with NoteWell AI
       </Typography>
 
-      <RadioGroup
-        value={selectedPlan}
-        onChange={(e) => setSelectedPlan(e.target.value)}
-      >
-        <FormControlLabel value="free" control={<Radio />} label="Free Plan" />
-        <FormControlLabel
-          value="pro"
-          control={<Radio />}
-          label="Pro Plan – For individuals"
-        />
-        <FormControlLabel
-          value="group"
-          control={<Radio />}
-          label="Group Plan – For teams or practices"
-        />
-      </RadioGroup>
+      <Grid container spacing={3}>
+        {/* FREE */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Free</Typography>
+              <Typography variant="h4">$0</Typography>
+              <Typography>15 notes/month</Typography>
 
-      {errorMsg && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {errorMsg}
-        </Alert>
-      )}
+              <Button fullWidth disabled>
+                {tier === "free" ? "Current Plan" : "Included"}
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {successMsg && (
-        <Alert severity="success" sx={{ mt: 2 }}>
-          {successMsg}
-        </Alert>
-      )}
+        {/* PRO */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ border: "2px solid #1976d2" }}>
+            <CardContent>
+              <Chip label="Most Popular" color="primary" sx={{ mb: 1 }} />
 
-      <Button
-        variant="contained"
-        sx={{ mt: 3 }}
-        onClick={handleSave}
-        disabled={saving || selectedPlan === currentPlan}
-      >
-        {saving ? "Processing..." : "Upgrade"}
-      </Button>
+              <Typography variant="h6">Pro</Typography>
+              <Typography variant="h4">$9/mo</Typography>
 
-      <Button sx={{ mt: 4 }} onClick={() => navigate("/dashboard")}>
-        Back to Dashboard
-      </Button>
+              <Typography>100 notes/month</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Perfect for regular client load
+              </Typography>
+
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{ mt: 2 }}
+                disabled={processing}
+                onClick={() => handleUpgrade("pro")}
+              >
+                Upgrade to Pro
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* UNLIMITED */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Unlimited</Typography>
+              <Typography variant="h4">$19/mo</Typography>
+
+              <Typography>Unlimited notes</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Best for high-volume clinicians
+              </Typography>
+
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{ mt: 2 }}
+                disabled={processing}
+                onClick={() => handleUpgrade("unlimited")}
+              >
+                Go Unlimited
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Container>
   );
 }

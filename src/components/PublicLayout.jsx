@@ -1,6 +1,13 @@
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { Box, Container, Card, CardContent, Typography, Link } from "@mui/material";
+import {
+  Box,
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Link,
+} from "@mui/material";
 
 export default function PublicLayout() {
   return (
@@ -8,19 +15,27 @@ export default function PublicLayout() {
       display="flex"
       flexDirection="column"
       minHeight="100vh"
-      bgcolor="#f9f9f9"
-      position="relative"
-      pb="56px"  // reserve space for footer height
+      bgcolor="#f7f8fa"
+      pb="64px"
     >
       <Container maxWidth="sm" sx={{ mt: 8, flexGrow: 1 }}>
-        <Card>
+        <Box textAlign="center" mb={3}>
+          <Typography variant="h4" fontWeight={700}>
+            NoteWell AI
+          </Typography>
+
+          <Typography color="text.secondary">
+            Mental health documentation, simplified.
+          </Typography>
+        </Box>
+
+        <Card sx={{ borderRadius: 2 }}>
           <CardContent>
             <Outlet />
           </CardContent>
         </Card>
       </Container>
 
-      {/* Fixed footer */}
       <Box
         sx={{
           position: "fixed",
@@ -28,23 +43,27 @@ export default function PublicLayout() {
           left: 0,
           right: 0,
           bgcolor: "#fff",
-          borderTop: "1px solid #ddd",
+          borderTop: "1px solid #e5e7eb",
           py: 1,
           px: 2,
           textAlign: "center",
-          userSelect: "none",
-          zIndex: (theme) => theme.zIndex.appBar,
           fontSize: "0.75rem",
           color: "text.secondary",
         }}
       >
-        &copy; {new Date().getFullYear()} SOAP App. All rights reserved. &nbsp;|&nbsp;
+        © {new Date().getFullYear()} NoteWell AI. &nbsp;|&nbsp;
+        <Link component={NavLink} to="/dashboard" underline="hover">
+          Dashboard
+        </Link>
+        &nbsp;|&nbsp;
         <Link component={NavLink} to="/privacy-policy" underline="hover">
-          Privacy Policy
-        </Link> &nbsp;|&nbsp;
+          Privacy
+        </Link>
+        &nbsp;|&nbsp;
         <Link component={NavLink} to="/terms-of-service" underline="hover">
-          Terms of Service
-        </Link> &nbsp;|&nbsp;
+          Terms
+        </Link>
+        &nbsp;|&nbsp;
         <Link component={NavLink} to="/disclaimer" underline="hover">
           Disclaimer
         </Link>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
-import { Typography, CircularProgress, Box } from "@mui/material";
+import { Typography, CircularProgress, Box, Stack } from "@mui/material";
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -36,52 +36,57 @@ export default function Profile() {
     fetchProfile();
   }, [uid]);
 
-  if (loading)
+  if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
         <CircularProgress />
       </Box>
     );
+  }
 
-  if (!profile)
+  if (!profile) {
     return (
       <Typography variant="body1" sx={{ p: 2 }}>
         No profile data found. Please update your profile.
       </Typography>
     );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
         Profile Information
       </Typography>
-      <Typography>
-        <strong>First Name:</strong> {profile.firstName || "-"}
-      </Typography>
-      <Typography>
-        <strong>Last Name:</strong> {profile.lastName || "-"}
-      </Typography>
-      <Typography>
-        <strong>Preferred Name:</strong> {profile.preferredName || "-"}
-      </Typography>
-      <Typography>
-        <strong>Address 1:</strong> {profile.address1 || "-"}
-      </Typography>
-      <Typography>
-        <strong>Address 2:</strong> {profile.address2 || "-"}
-      </Typography>
-      <Typography>
-        <strong>City:</strong> {profile.city || "-"}
-      </Typography>
-      <Typography>
-        <strong>State:</strong> {profile.state || "-"}
-      </Typography>
-      <Typography>
-        <strong>Zip Code:</strong> {profile.zipCode || "-"}
-      </Typography>
-      <Typography>
-        <strong>Occupation:</strong> {profile.occupation || "-"}
-      </Typography>
+
+      <Stack spacing={1}>
+        <Typography>
+          <strong>First Name:</strong> {profile.firstName || "-"}
+        </Typography>
+
+        <Typography>
+          <strong>Last Name:</strong> {profile.lastName || "-"}
+        </Typography>
+
+        <Typography>
+          <strong>Preferred Name:</strong> {profile.preferredName || "-"}
+        </Typography>
+
+        <Typography>
+          <strong>Practice Name:</strong> {profile.practiceName || "-"}
+        </Typography>
+
+        <Typography>
+          <strong>License Type:</strong> {profile.licenseType || "-"}
+        </Typography>
+
+        <Typography>
+          <strong>State:</strong> {profile.state || "-"}
+        </Typography>
+
+        <Typography>
+          <strong>Field:</strong> Mental Health
+        </Typography>
+      </Stack>
     </Box>
   );
 }
